@@ -1,0 +1,94 @@
+import glob
+
+# Loading data
+
+pos_files = glob.glob('D:\Python\Movies review dataset\\aclImdb_v1\\aclImdb\\test\pos\*.txt')
+pos_reviews = []
+for file in pos_files:
+    with open(file, encoding='utf8') as stream:
+        content = stream.read()
+        words = content.lower().replace('<br /><br />','  ').replace('.', '').replace(',', '').replace('"', '').replace("\'", "'").replace('(','').replace(')','').split()
+        pos_reviews.append(words)
+
+neg_files = glob.glob('D:\Python\Movies review dataset\\aclImdb_v1\\aclImdb\\test\\neg\*.txt')
+neg_reviews = []
+for file in neg_files:
+    with open(file, encoding='utf8') as stream:
+        content = stream.read()
+        words = content.lower().replace('<br /><br />','  ').replace('.', '').replace(',', '').replace('"', '').replace("\'", "'").replace('(','').replace(')','').split()
+        neg_reviews.append(words)
+
+# Training / learning
+
+words_count = {}
+pos_words_count = {}
+neg_words_count = {}
+
+for review in pos_reviews:
+    for word in set(review):
+        words_count[word] = words_count.get(word, 0) + 1
+        pos_words_count[word] = pos_words_count.get(word, 0) + 1
+
+for review in neg_reviews:
+    for word in set(review):
+        words_count[word] = words_count.get(word, 0) + 1
+        neg_words_count[word] = neg_words_count.get(word, 0) + 1
+
+words_sentiment = {}
+for word in words_count.keys():
+    if words_count[word] >= 50:
+        pos = pos_words_count.get(word, 0)
+        neg = neg_words_count.get(word, 0)
+        all_ = words_count[word]
+        words_sentiment[word] = (pos - neg) / all_
+# Vizualize words sentiment
+
+sorted_ = sorted(words_sentiment.items(), key=lambda x: x[1])
+print("Most negative")
+for word, sentiment in sorted_[:10]:
+    print(f"* {sentiment:8f} {words_count[word]:6} {word}")
+
+sorted_ = sorted(words_sentiment.items(), key=lambda x: x[1])
+print("Most positive")
+for word, sentiment in sorted_[-10:]:
+    print(f"* {sentiment:8f} {words_count[word]:6} {word}")
+
+def compute_sentiment(words, debug = False):
+    sentiment = 0
+    for word in words:
+        word_sentiment = words_sentiment.get(word, 0)
+        word_count = word.count(word, 0) + 1
+        word_count = words_count.get(word, 0)
+        if debug:
+            print(f"{word_count} {word_sentiment:3f} {word}")
+    sentiment += word_sentiment
+    sentiment /= len(words)
+    return sentiment
+
+n_correct = 0
+for review in pos_reviews:
+    if compute_sentiment(review) >0:
+        n_correct += 1
+for review in neg_reviews:
+    if compute_sentiment(review) <0:
+        n_correct += 1
+
+train_score = n_correct / len(pos_reviews + neg_reviews)
+print('Train score: ', train_score)
+
+# user imput
+
+text = input('Please enter the sentence:')
+words = text.lower().replace('<br /><br />','  ').replace('.', '').replace(',', '').replace('"', '').replace("\'", "'").replace('(','').replace(')','').split()
+sentiment = compute_sentiment(words, debug= True)
+
+for word in words:
+    word_sentiment = words_sentiment.get(word, 0)
+    word_count = word.count(word, 0 ) + 1
+    word_count = words_count.get(word, 0)
+    print(f"{word_count} {word_sentiment:3f} {word}")
+    sentiment += word_sentiment
+sentiment /= len(words)
+print(f"Sentiment: {sentiment:2f}")
+
+
